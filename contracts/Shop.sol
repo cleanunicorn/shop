@@ -62,6 +62,28 @@ contract Shop {
         );
     }
 
+    function disableProduct(
+        uint256 productID
+    ) 
+        public 
+        onlySeller(productID)
+        returns (
+        bool success
+    ) {
+        products[productID].enabled = false;
+
+        return true;
+    }
+
+    modifier onlySeller(uint256 productID) {
+        require(
+            products[productID].seller == msg.sender, 
+            "Only seller can disable products"
+        );
+        
+        _;
+    }
+
     event ProductCreated(
         address seller,
         string name,
