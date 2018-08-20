@@ -44,7 +44,7 @@ contract('Shop', function (accounts) {
             );
     
             // Tx was successful
-            assert.isTrue(productCreated.receipt.status == '0x1');
+            assert.isTrue(productCreated.receipt.status == "0x01", "Transaction was not successful");
     
             // Event was emitted correctly
             assert.equal(
