@@ -4,9 +4,10 @@ let BigNumber = require('bignumber.js');
 contract('Shop', (accounts) => {
     let owner = accounts[0];
     let seller = accounts[1];
+    let buyer = accounts[2];
     let hacker = accounts[9];
 
-    it("should assert true", async function() {
+    it("should assert true", async function () {
         let shop = await Shop.new();
         assert.isTrue(true);
     });
@@ -275,5 +276,134 @@ contract('Shop', (accounts) => {
                 );
             }
         }
-    })
+    });
+
+    it("should be emit Purchase event on buy", async () => {
+        let shop = await Shop.new({ from: owner });
+
+        let tests = [
+            // Buyer successfully buys 1 product
+            {
+                product: {
+                    seller: seller,
+                    name: "product1",
+                    price: BigNumber(web3.toWei(1, "gwei")),
+                    meta: [],
+                },
+                buyer: {
+                    address: buyer,
+                    value: BigNumber(web3.toWei(1, "gwei")),
+                    quantity: 1,
+                },
+                successful: true,
+            },
+            // Buyer successfully buys 10 products
+            {
+                product: {
+                    seller: seller,
+                    name: "product2",
+                    price: BigNumber(web3.toWei(1, "gwei")),
+                    meta: [],
+                },
+                buyer: {
+                    address: buyer,
+                    value: BigNumber(web3.toWei(10, "gwei")),
+                    quantity: 10,
+                },
+                successful: true,
+            },
+            // Buyer unsuccessfully buys 1 product (not enough ether sent)
+            {
+                product: {
+                    seller: seller,
+                    name: "product3",
+                    price: BigNumber(web3.toWei(10, "gwei")),
+                    meta: [],
+                },
+                buyer: {
+                    address: buyer,
+                    value: BigNumber(web3.toWei(1, "gwei")),
+                    quantity: 1,
+                },
+                successful: false,
+            },
+        ];
+
+        for (let i = 0; i < tests.length; i++) {
+            let test = tests[i];
+
+            let productCreated = await shop.createProduct(
+                test.product.name,
+                test.product.price.toString(),
+                test.product.meta,
+                {
+                    from: test.product.seller,
+                },
+            );
+
+            let productID = productCreated.logs[0].args.productID.toString();
+
+            let productBought = await shop.buy(
+                productID,
+                test.buyer.quantity,
+                {
+                    from: test.buyer.address,
+                },
+            );
+
+            if (test.successful) {
+                assert.equal(
+                    productBought.logs.length,
+                    1,
+                    "Expecting one event"
+                );
+            } else {
+                assert.equal(
+                    productBought.logs.length,
+                    0,
+                    "Expecting no event"
+                );
+            }
+
+            let purchaseEvent = productBought.logs[0];
+
+            let block = await web3.eth.getBlock("latest");
+            let blockDate = block.timestamp;
+            
+            assert.equal(
+                purchaseEvent.event,
+                'Purchase',
+                "Purchase event was not found",
+            );
+
+            assert.equal(
+                purchaseEvent.args.seller,
+                test.product.seller,
+                `Emitted seller incorrect`,
+            );
+
+            assert.equal(
+                purchaseEvent.args.buyer,
+                test.buyer.address,
+                `Emitted buyer incorrect`,
+            );
+
+            assert.equal(
+                purchaseEvent.args.productID.toString(),
+                productID,
+                `Emitted productID incorrect`,
+            );
+
+            assert.equal(
+                purchaseEvent.args.quantity,
+                test.buyer.quantity,
+                `Emitted quantity incorrect`,
+            );
+
+            assert.equal(
+                purchaseEvent.args.dateOfPurchase.toString(),
+                blockDate,
+            );
+        }
+    });
 });

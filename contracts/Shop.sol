@@ -12,13 +12,26 @@ contract Shop {
 
     Product[] products;
 
+    struct Receipt {
+        address seller;
+        address buyer;
+        uint256 productID;
+        uint256 quantity;
+        uint256 dateOfPurchase;
+    }
+
+    Receipt[] receipts;
+
     function createProduct(
         string name, 
         uint256 price, 
         byte[] meta
-    ) public returns (
-        uint256 productID
-    ) {
+    ) 
+        public 
+        returns (
+            uint256 productID
+        ) 
+    {
         Product memory p;
         p.name = name;
         p.price = price;
@@ -41,14 +54,18 @@ contract Shop {
 
     function getProduct(
         uint256 productID
-    ) public view returns (
-        address seller,
-        string name,
-        uint256 price,
-        byte[] meta,
-        bool enabled,
-        uint256 dateOfCreation
-    ) {
+    ) 
+        public 
+        view 
+        returns (
+            address seller,
+            string name,
+            uint256 price,
+            byte[] meta,
+            bool enabled,
+            uint256 dateOfCreation
+        ) 
+    {
         Product memory p;
         p = products[productID];
 
@@ -68,8 +85,9 @@ contract Shop {
         public 
         onlySeller(productID)
         returns (
-        bool success
-    ) {
+            bool success
+        ) 
+    {
         products[productID].enabled = false;
 
         return true;
@@ -81,12 +99,44 @@ contract Shop {
         public
         onlySeller(productID)
         returns (
-        bool success
-    ) {
+            bool success
+        ) 
+    {
         products[productID].enabled = true;
 
         return true;    
     }
+
+    function buy(
+        uint256 productID,
+        uint256 quantity
+    ) 
+        public
+        payable
+        returns (
+            bool success,
+            uint256 receiptID
+        ) 
+    {
+        // Receipt memory r;
+        // r.seller = products[productID].seller;
+        // r.buyer = msg.sender;
+        // r.productID = productID;
+        // r.quantity = quantity;
+        // r.dateOfPurchase = now;
+        // receipts.push(r);
+
+        emit Purchase(
+            products[productID].seller,
+            msg.sender,
+            productID,
+            quantity,
+            now
+        );
+
+        return (true, 0);
+    }
+
 
     modifier onlySeller(uint256 productID) {
         require(
@@ -102,5 +152,13 @@ contract Shop {
         string name,
         uint256 price,
         uint256 productID
+    );
+
+    event Purchase(
+        address seller,
+        address buyer,
+        uint256 productID,
+        uint256 quantity,
+        uint256 dateOfPurchase
     );
 }
