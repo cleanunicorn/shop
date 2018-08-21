@@ -45,7 +45,7 @@ contract('Shop', (accounts) => {
             );
     
             // Tx was successful
-            assert.isTrue(productCreated.receipt.status == "0x01", "Transaction was not successful");
+            assert.isTrue(BigNumber(productCreated.receipt.status).toString() == 1, "Transaction was not successful");
     
             // Event was emitted correctly
             assert.equal(
