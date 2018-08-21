@@ -75,6 +75,19 @@ contract Shop {
         return true;
     }
 
+    function enableProduct(
+        uint256 productID
+    ) 
+        public
+        onlySeller(productID)
+        returns (
+        bool success
+    ) {
+        products[productID].enabled = true;
+
+        return true;    
+    }
+
     modifier onlySeller(uint256 productID) {
         require(
             products[productID].seller == msg.sender, 

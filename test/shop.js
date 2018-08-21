@@ -1,7 +1,7 @@
 let Shop = artifacts.require("./Shop.sol");
 let BigNumber = require('bignumber.js');
 
-contract('Shop', function (accounts) {
+contract('Shop', (accounts) => {
     let owner = accounts[0];
     let seller = accounts[1];
     let hacker = accounts[9];
@@ -208,4 +208,72 @@ contract('Shop', function (accounts) {
 
         }
     });
+
+    it("should be able to enableProduct", async () => {
+        let shop = await Shop.new({ from: owner });
+
+        let tests = [
+            {
+                product: {
+                    seller: seller,
+                    name: "product1",
+                    price: BigNumber(0),
+                    meta: [],
+                },
+                enabler: seller,
+                successful: true,
+            },
+            {
+                product: {
+                    seller: seller,
+                    name: "product2",
+                    price: BigNumber(0),
+                    meta: [],
+                },
+                enabler: hacker,
+                successful: false,
+            },
+        ]
+
+        for (i = 0; i < tests.length; i++) {
+            let test = tests[i];
+
+            let productCreated = await shop.createProduct(
+                test.product.name,
+                test.product.price.toString(),
+                test.product.meta,
+                {
+                    from: test.product.seller,
+                },
+            );
+
+            await shop.disableProduct(
+                productCreated.logs[0].args.productID.toString(),
+                { from: test.product.seller }
+            );
+
+            let productWasEnabled = false;
+
+            try {
+                let productEnabled = await shop.enableProduct(
+                    productCreated.logs[0].args.productID.toString(),
+                    { from: test.enabler }
+                );
+
+                productWasEnabled = true;
+            } catch (e) { }
+            
+            if (productWasEnabled) {
+                assert.isTrue(
+                    test.successful,
+                    `This account ${test.enabler} should not be allowed to enable the product`
+                );
+            } else {
+                assert.isTrue(
+                    !test.successful,
+                    `This account ${test.enabler} should be allowed to enable the product`
+                );
+            }
+        }
+    })
 });
